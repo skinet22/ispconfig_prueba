@@ -26,7 +26,7 @@ services:
       - LINUX_IMMUTABLE
       - DAC_READ_SEARCH                  # Pure-ftpd-mysql
       - SYS_NICE                         # Pure-ftpd-mysql
-    # volumes:
+     volumes:
       # Mount (default) volumes - copy the templates to desired location (/volumes)
        - /var/lib/docker/volumes/ispconfig/www:/var/www
        - /var/lib/docker/volumes/ispconfig/vmail:/var/vmail
