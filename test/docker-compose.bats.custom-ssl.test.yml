@@ -1,0 +1,42 @@
+version: '2.1'
+
+services:
+
+  sut:
+    image: graze/bats
+    command: /app/bats/custom-ssl.sh
+    depends_on:
+      ispconfig-test:
+        condition: service_healthy
+    networks:
+      - test_shared
+    environment:
+      - HOSTNAME=myhost.test.com
+      - HOSTNAME_EMAIL=email.myhost.test.com
+      - SSL_CERT=/etc/ssl/local/test.com.crt
+      - SSL_CHAIN=/etc/ssl/local/test.com.pem
+      - SSL_KEY=/etc/ssl/local/test.com.key
+    volumes:
+      - ./:/app:ro
+      - ./ssl:/etc/ssl/local:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  ispconfig-test:
+    container_name: ispconfig-test
+    extends:
+      file: ../docker-compose.template.yml
+      service: ispconfig
+    networks:
+      - test_shared
+    environment:
+      - SSL_CERT=/etc/ssl/local/test.com.crt
+      - SSL_CHAIN=/etc/ssl/local/test.com.pem
+      - SSL_KEY=/etc/ssl/local/test.com.key
+      - HOSTNAME_EMAIL=email.myhost.test.com
+    volumes:
+      - ./ssl:/etc/ssl/local:ro
+
+networks:
+  test_shared:
+    external: true
+

@@ -1,0 +1,32 @@
+version: '2.1'
+
+services:
+
+  sut:
+    build:
+      context: .
+      dockerfile: Dockerfile.puppeteer
+    depends_on:
+      ispconfig-test:
+        condition: service_healthy
+    networks:
+      - test_shared
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - './no-phpmyadmin:/app/test:ro'
+
+  ispconfig-test:
+    container_name: ispconfig-test
+    build:
+      args:
+        BUILD_PHPMYADMIN: "no"
+    extends:
+      file: ../docker-compose.template.yml
+      service: ispconfig
+    networks:
+      - test_shared
+
+networks:
+  test_shared:
+    external: true

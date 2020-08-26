@@ -1,0 +1,31 @@
+version: '2.1'
+
+services:
+
+  sut:
+    image: graze/bats
+    command: /app/bats/reconfigure.sh
+    depends_on:
+      ispconfig-test:
+        condition: service_healthy
+    networks:
+      - test_shared
+    environment:
+      - MYSQL_HOST=0.0.0.0
+    volumes:
+      - ./:/app:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  ispconfig-test:
+    container_name: ispconfig-test
+    environment:
+      - MYSQL_HOST=0.0.0.0
+    extends:
+      file: ../docker-compose.template.yml
+      service: ispconfig
+    networks:
+      - test_shared
+
+networks:
+  test_shared:
+    external: true

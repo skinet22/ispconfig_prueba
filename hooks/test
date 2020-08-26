@@ -1,0 +1,61 @@
+#!/bin/bash -xe
+
+if [ "$SOURCE_BRANCH" = "master" ]; then exit 0; fi
+
+trap "echo Exited!; exit;" SIGINT SIGTERM
+
+export CONTAINER="ispconfig-test"
+if command -v gsed; then SED="gsed"; else SED="sed"; fi
+
+function buildAndTest() {
+  YML=$1
+  ARG=$2
+  CMD="docker-compose -f test/$YML build $ARG"
+  if ! $CMD; then
+    echo "Failed: \"$CMD\""
+    exit 1
+  fi
+
+  DOWN="docker-compose -f test/$YML down -v"
+  CMD="docker-compose -f test/$YML up --no-build --abort-on-container-exit --force-recreate --remove-orphans sut"
+  if $CMD; then
+    $DOWN || true
+  else
+    echo "Failed: \"$CMD\""
+    exit 1
+  fi
+}
+
+function cleanImage() {
+    docker image rmi "$CONTAINER" 2> /dev/null || true
+}
+
+function testNormal() {
+  buildAndTest docker-compose.puppeteer.test.yml
+  buildAndTest docker-compose.puppeteer.no-phpmyadmin.test.yml
+  buildAndTest docker-compose.bats.test.yml
+  buildAndTest docker-compose.bats.custom-ssl.test.yml
+  buildAndTest docker-compose.bats.reconfigure.test.yml
+}
+
+function testLiveDB() {
+  function databaseUp() {
+    docker-compose -f "test/$1" up -d -V --force-recreate --remove-orphans mariadb
+  }
+  function databaseDown() {
+    docker stop mariadb || true
+    docker rm mariadb || true
+  }
+
+  cleanImage
+  databaseUp "$1"
+  buildAndTest "$1" --no-cache
+  databaseDown "$1"
+  cleanImage
+}
+
+testLiveDB "docker-compose.puppeteer.remote-db.test.yml"
+testLiveDB "docker-compose.puppeteer.remote-db-seeded.test.yml"
+testNormal
+
+echo "$(tput bold)=> Tests succeeded! $(tput sgr0)"
