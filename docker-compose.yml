@@ -1,0 +1,86 @@
+version: '2.1'
+services:
+  ispconfig:
+    ##################################################
+    # BUILD section 2
+    ##################################################
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_TZ: America/Argentina/Buenos_Aires
+        BUILD_HOSTNAME: server.testeame.com.ar
+        BUILD_MYSQL_PW: Hydra1302
+        BUILD_PRINTING: "no"
+        BUILD_REDIS: "yes"
+        BUILD_ISPCONFIG_USE_SSL: "yes"
+    ##################################################
+    # RUN section
+    ##################################################
+    image: itsthejb/ispconfig:0.8.2
+    container_name: ispconfig
+    hostname: ispconfig
+    domainname: testeame.com.ar
+    cap_add:
+      - SYS_ADMIN
+      - LINUX_IMMUTABLE
+      - DAC_READ_SEARCH                  # Pure-ftpd-mysql
+      - SYS_NICE                         # Pure-ftpd-mysql
+    # volumes:
+      # Mount (default) volumes - copy the templates to desired location (/volumes)
+       - /var/lib/docker/volumes/ispconfig/www:/var/www
+       - /var/lib/docker/volumes/ispconfig/vmail:/var/vmail
+       - /var/lib/docker/volumes/ispconfig/mysql:/var/lib/mysql
+      # Mount host timezone (linux)
+       - /etc/localtime:/etc/localtime:ro
+      # service volume for overwrites (ovm) and migration (mig)
+       - /var/lib/docker/volumes/ispconfig/service:/service
+       - /var/lib/docker/volumes/ispconfig/ispc/rsnapshot:/rsnapshot
+    environment:
+      - LANG=en_US.UTF-8
+      - LANGUAGE=en_US:en
+      - LC_ALL=en_US.UTF-8
+      - HOSTNAME=server.testeame.com.ar            # see ./build/autoinstall.ini
+      - HOSTNAME_EMAIL=mail.testeame.com.ar # Hostname for email
+      # disable services (apache2 clamav-daemon cron dovecot fail2ban mailman mysql postfix postfix pure-ftpd-mysql redis rspamd rsyslog spamassassin ssh unbound)
+      - DISABLED_SERVICES=mailman unbound
+      - POSTGREY_DELAY=300
+      - POSTGREY_MAX_AGE=35
+      - POSTGREY_TEXT="Delayed by postgrey"
+      - REDIS_HOST=localhost
+      # Directory of apache vhosts to include
+      # - APACHE_SUPPLEMENTARY_VHOSTS=/etc/apache2/supplementary/*.vhost
+      # Apache mods to enable at start
+      # - APACHE_ENABLE_MODS=macro,proxy_balancer,proxy_http
+      # - APACHE_DISABLE_DEFAULT_SITE=no
+      # Paths to custom ssl cert and private key
+      # - SSL_CERT=
+      # - SSL_CHAIN=
+      # - SSL_KEY=
+      # reconfigure the mysql host at boot
+      # - MYSQL_HOST=host
+      # reconfigure stored password for roundcube database at start
+      # - ROUNDCUBE_DB_PASSWORD=password
+      # mailman config (not working?)
+      # - MAILMAN_EMAIL_HOST=test.com
+      # - MAILMAN_EMAIL=email@test.com
+      # - MAILMAN_PASS=pass
+      # cron mail config
+      # - CRON_MAILTO=
+      # - CRON_MAILFROM=
+    ports:
+      - "110:110"      # pop3
+      - "995:995"      # pop3s
+      - "143:143"      # imap
+      - "993:993"      # imaps
+      - "25:25"        # smtp
+      - "587:587"      # smtps
+      - "20:20"
+      - "21:21"        # pureftpd
+      - "80:80"
+      - "443:443"
+      - "8087:8080"
+      #- "53:53"       # bind
+      - "2222:22"     # sshd
+      - "30000:30000"  # pure-ftpd
+      
